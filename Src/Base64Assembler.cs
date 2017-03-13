@@ -90,5 +90,17 @@ namespace BizTalkComponents.PipelineComponents.Base64Assembler
 
             return pInMsg;
         }
+
+        public void Load(IPropertyBag propertyBag, int errorLog)
+        {
+            DocumentSpecName = PropertyBagHelper.ReadPropertyBag(propertyBag, DocumentSpecNamePropertyName, DocumentSpecName);
+            DestinationXpath = PropertyBagHelper.ReadPropertyBag(propertyBag, DestinationXpathPropertyName, DestinationXpath);
+        }
+
+        public void Save(IPropertyBag propertyBag, bool clearDirty, bool saveAllProperties)
+        {
+            PropertyBagHelper.WritePropertyBag(propertyBag, DocumentSpecNamePropertyName, DocumentSpecName);
+            PropertyBagHelper.WritePropertyBag(propertyBag, DestinationXpathPropertyName, DestinationXpath);
+        }
     }
 }
