@@ -49,9 +49,9 @@ namespace BizTalkComponents.PipelineComponents.Base64Assembler
             {
                 documentSpec = (DocumentSpec)pContext.GetDocumentSpecByName(DocumentSpecName);
             }
-            catch (COMException cex)
+            catch (COMException)
             {
-                throw cex;
+                throw new ArgumentException(string.Format("Could not find document with documentspecname = {0}", DocumentSpecName));
             }
 
             var doc = new XmlDocument();
@@ -80,6 +80,13 @@ namespace BizTalkComponents.PipelineComponents.Base64Assembler
             ms.Position = 0;
 
             var node = doc.SelectSingleNode(DestinationXpath);
+
+            if(node == null)
+            {
+                throw new ArgumentException("Could not find element at {0}", DestinationXpath);
+            }
+
+
             node.InnerText = Convert.ToBase64String(ms.ToArray());
 
             var outMs = new MemoryStream();
