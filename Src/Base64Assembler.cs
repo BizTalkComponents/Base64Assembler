@@ -11,17 +11,19 @@ using Microsoft.BizTalk.Streaming;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Xml;
+using System.Collections;
 
 namespace BizTalkComponents.PipelineComponents.Base64Assembler
 {
     [System.Runtime.InteropServices.Guid("a496e8a7-f8bb-4e55-b7ff-33f6bea70b56")]
     [ComponentCategory(CategoryTypes.CATID_PipelineComponent)]
     [ComponentCategory(CategoryTypes.CATID_AssemblingSerializer)]
-    public partial class Base64Assembler : Microsoft.BizTalk.Component.Interop.IComponent, IBaseComponent,
-                                        IPersistPropertyBag, IComponentUI
+    public partial class Base64Assembler :  IBaseComponent,
+                                        IPersistPropertyBag, IComponentUI, IAssemblerComponent
     {
         private const string DestinationXpathPropertyName = "DestinationXpath";
         private const string DocumentSpecNamePropertyName = "DocumentSpecName";
+        private readonly Queue _outputQueue = new Queue();
 
         [RequiredRuntime]
         [DisplayName("Destination xpath")]
@@ -33,7 +35,7 @@ namespace BizTalkComponents.PipelineComponents.Base64Assembler
         [Description("DocumentSpecName of schema that which the base64 string should be enclosed in.")]
         public string DocumentSpecName { get; set; }
 
-        public IBaseMessage Execute(IPipelineContext pContext, IBaseMessage pInMsg)
+        public void AddDocument(IPipelineContext pContext, IBaseMessage pInMsg)
         {
             string errorMessage;
 
@@ -57,7 +59,7 @@ namespace BizTalkComponents.PipelineComponents.Base64Assembler
             var doc = new XmlDocument();
 
             using (var sw = new StringWriter(new StringBuilder()))
-            { 
+            {
 
                 doc.Load(documentSpec.CreateXmlInstance(sw));
             }
@@ -81,7 +83,7 @@ namespace BizTalkComponents.PipelineComponents.Base64Assembler
 
             var node = doc.SelectSingleNode(DestinationXpath);
 
-            if(node == null)
+            if (node == null)
             {
                 throw new ArgumentException("Could not find element at {0}", DestinationXpath);
             }
@@ -95,8 +97,21 @@ namespace BizTalkComponents.PipelineComponents.Base64Assembler
 
             pInMsg.BodyPart.Data = outMs;
 
-            return pInMsg;
+            _outputQueue.Enqueue(pInMsg);
+
+            
         }
+
+        public IBaseMessage Assemble(IPipelineContext pContext)
+        {
+            if (_outputQueue.Count > 0)
+            {
+                return (IBaseMessage)_outputQueue.Dequeue();
+            }
+
+            return null;
+        }
+             
 
         public void Load(IPropertyBag propertyBag, int errorLog)
         {
